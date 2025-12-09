@@ -24,8 +24,9 @@ resource "aws_lambda_function" "etl_ingestion" {
   function_name = "${var.project_name}-ingestion-lambda"
   role          = aws_iam_role.lambda_exec.arn
   runtime       = "python3.12"
-  handler       = "etl_handler.handler"
+
  
+  handler       = "lambda_handler.lambda_handler"
 
   # Use the ZIP that archive_file just built 
   filename         = data.archive_file.etl_lambda.output_path
@@ -38,6 +39,13 @@ resource "aws_lambda_function" "etl_ingestion" {
     variables = {
       STAGE               = "dev"
       LANDING_BUCKET_NAME = aws_s3_bucket.landing_zone.bucket
+
+      # DB ENV VARS (for your DatabaseClient)
+      DB_HOST     = var.db_host
+      DB_NAME     = var.db_name
+      DB_USER     = var.db_user
+      DB_PASSWORD = var.db_password
+      DB_PORT     = "5432"
     }
   }
 
@@ -46,7 +54,6 @@ resource "aws_lambda_function" "etl_ingestion" {
     Project = var.project_name
   }
 }
-
 
 
 
