@@ -41,7 +41,7 @@ resource "aws_lambda_function" "etl_ingestion" {
       LANDING_BUCKET_NAME = aws_s3_bucket.landing_zone.bucket
 
       # Secrets Manager – DB credentials
-      DB_SECRET_ARN = aws_secretsmanager_secret.db_creds.arn
+      DB_SECRET_ARN = data.aws_secretsmanager_secret.db_creds.arn
     }
   }
 
@@ -92,7 +92,7 @@ resource "aws_iam_role_policy" "lambda_secrets_access" {
         Action = [
           "secretsmanager:GetSecretValue"
         ]
-        Resource = aws_secretsmanager_secret.db_creds.arn
+        Resource = data.aws_secretsmanager_secret.db_creds.arn
       }
     ]
   })
