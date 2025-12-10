@@ -40,12 +40,8 @@ resource "aws_lambda_function" "etl_ingestion" {
       STAGE               = "dev"
       LANDING_BUCKET_NAME = aws_s3_bucket.landing_zone.bucket
 
-      # DB ENV VARS (for your DatabaseClient)
-      DB_HOST     = var.db_host
-      DB_NAME     = var.db_name
-      DB_USER     = var.db_user
-      DB_PASSWORD = var.db_password
-      DB_PORT     = "5432"
+      # Secrets Manager – DB credentials
+      DB_SECRET_ARN = aws_secretsmanager_secret.db_creds.arn
     }
   }
 
@@ -77,6 +73,26 @@ resource "aws_iam_role_policy" "lambda_s3_access" {
           aws_s3_bucket.landing_zone.arn,
           "${aws_s3_bucket.landing_zone.arn}/*"
         ]
+      }
+    ]
+  })
+}
+
+# SECRET MANAGER ACCESS 
+
+resource "aws_iam_role_policy" "lambda_secrets_access" {
+  name = "${var.project_name}-lambda-secrets-access"
+  role = aws_iam_role.lambda_exec.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = [
+          "secretsmanager:GetSecretValue"
+        ]
+        Resource = aws_secretsmanager_secret.db_creds.arn
       }
     ]
   })
