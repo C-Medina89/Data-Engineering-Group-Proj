@@ -26,6 +26,15 @@ def test_ingest_table_preview_success(mocker):
         {"id": 2, "name": "Yana"}
     ]
 
+    # fake_db.fetch_preview.return_value = {
+    #     "columns": ["id", "name"],
+    #     "rows": [
+    #         {"id": 1, "name": "Aaron"},
+    #         {"id": 2, "name": "Yana"}
+    #     ]
+    # }
+
+
     # Fake S3 key
     fake_s3_instance.write_json.return_value = "staff/raw_2025-01-01T12-00-00.json"
 
@@ -39,6 +48,11 @@ def test_ingest_table_preview_success(mocker):
         "rows": 2,
         "s3_key": "staff/raw_2025-01-01T12-00-00.json"
     }
+
+    # assert result["table"] == "staff"
+    # assert result["row_count"] == 2
+    # assert result["s3_key"] == "staff/raw_2025-01-01T12-00-00.json"
+    # assert "timestamp" in result  # timestamp exists
 
     fake_db_instance.fetch_preview.assert_called_once_with("staff", 2)
     fake_s3_instance.write_json.assert_called_once()
