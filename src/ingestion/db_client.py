@@ -65,13 +65,26 @@ class DatabaseClient():
             logger.exception(f"Error executing SQL: {sql}")
             raise
     
+   
     def fetch_preview(self, table_name: str, limit: int = 10):
-        
         logger.info(f"Fetching preview from table '{table_name}' (limit={limit})")
-        
+
+        if not table_name.isidentifier():
+            raise ValueError(f"Unsafe table name: {table_name}")
+
         sql = f"SELECT * FROM {table_name} LIMIT :limit"
-        preview_table = self.run(sql, {"limit": limit})
-        return preview_table
+        rows = self.run(sql, {"limit": limit})
+
+        if not rows:
+            return {
+                "columns": [],
+                "rows": []
+            }
+
+        return {
+            "columns": list(rows[0].keys()),
+            "rows": rows
+        }
 
     def close(self):
         try:
