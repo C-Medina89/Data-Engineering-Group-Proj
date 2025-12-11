@@ -1,36 +1,54 @@
 from dotenv import load_dotenv
 from pg8000.native import Connection
 import pg8000
-import os 
+import os
 import logging
-
-
-
+import boto3
+import json
+import sys
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
-
-
+print(f"DEBUG: Python path: {sys.path}")
+print(f"DEBUG: Current directory: {os.getcwd()}")
+print(f"DEBUG: Environment variables: {dict(os.environ)}")
 load_dotenv()
-
-
 class DatabaseClient():
     def __init__(self):
-        logger.info("Initializing DatabaseClient...")    
-        
-        self.host = os.getenv("DB_HOST")
-        self.database = os.getenv("DB_NAME")
-        self.user = os.getenv("DB_USER")
-        self.password = os.getenv("DB_PASSWORD")
-        self.port = int(os.getenv("DB_PORT", 5432))
-        
+        logger.info("Initializing DatabaseClient...")
+     # Check if running locally (with .env) or in Lambda (with Secrets Manager)
+        if os.path.exists('.env') or all([
+            os.getenv("DB_HOST"),
+            os.getenv("DB_NAME"),
+            os.getenv("DB_USER"),
+            os.getenv("DB_PASSWORD")
+        ]):
+            # Local development or test environment
+            self.host = os.getenv("DB_HOST")
+            self.database = os.getenv("DB_NAME")
+            self.user = os.getenv("DB_USER")
+            self.password = os.getenv("DB_PASSWORD")
+            self.port = int(os.getenv("DB_PORT", 5432))
+            logger.info("Using environment variables for DB connection")
+        else:
+            # Lambda environment - use Secrets Manager
+            secret_arn = os.getenv("DB_SECRET_ARN")
+            if not secret_arn:
+                raise ValueError("DB_SECRET_ARN environment variable is required in Lambda")
+            client = boto3.client('secretsmanager')
+            response = client.get_secret_value(SecretId=secret_arn)
+            secret = json.loads(response['SecretString'])
+            self.host = secret.get("host")
+            self.database = secret.get("database")
+            self.user = secret.get("user")
+            self.password = secret.get("password")
+            self.port = int(secret.get("port", 5432))
+            logger.info("Using Secrets Manager for DB connection")
         logger.info(
             f"Loaded DB env variables: host={self.host}, database={self.database}, user={self.user}, port={self.port}"
         )
-
         if not all([self.host, self.database, self.user, self.password, self.port]):
             logger.error("Missing required DB environment variables!")
             raise ValueError("One or more database environment variables are missing.")
-
         try:
             self.conn = Connection(
                 user = self.user,
@@ -38,54 +56,39 @@ class DatabaseClient():
                 database = self.database,
                 password = self.password,
                 port = self.port)
-        
             logger.info("Database connection successfully.")
         except Exception as e:
             logger.exception("Failed to database connection.")
             raise
-
-        
-
     def run(self, sql: str, params: dict | None = None):
         logger.info(f"Executing SQL: {sql} | params={params}")
-
         try:
             if params:
                 rows = self.conn.run(sql, **params)
             else:
                 rows = self.conn.run(sql)
-
             column_names = [col["name"] for col in self.conn.columns]
             result = [dict(zip(column_names, row)) for row in rows]
-
             logger.info(f"SQL executed successfully. Returned {len(result)} rows.")
             return result
-
         except Exception as e:
             logger.exception(f"Error executing SQL: {sql}")
             raise
-    
-   
     def fetch_preview(self, table_name: str, limit: int = 10):
         logger.info(f"Fetching preview from table '{table_name}' (limit={limit})")
-
         if not table_name.isidentifier():
             raise ValueError(f"Unsafe table name: {table_name}")
-
         sql = f"SELECT * FROM {table_name} LIMIT :limit"
         rows = self.run(sql, {"limit": limit})
-
         if not rows:
             return {
                 "columns": [],
                 "rows": []
             }
-
         return {
             "columns": list(rows[0].keys()),
             "rows": rows
         }
-
     def close(self):
         try:
             self.conn.close()
@@ -94,4 +97,8 @@ class DatabaseClient():
             logger.warning("Failed to close database connection cleanly.")
 
 
-    
+
+
+
+
+
