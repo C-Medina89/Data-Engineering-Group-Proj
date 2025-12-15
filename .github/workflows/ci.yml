@@ -29,8 +29,7 @@ jobs:
               
 
         - name: Run pytest 
-          working-directory: ./src/ingestion
-          run: pytest test
+          run: pytest -v
 
         - name: Lint
           run: flake8 src/ingestion
