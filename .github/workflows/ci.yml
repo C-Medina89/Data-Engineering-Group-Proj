@@ -29,7 +29,6 @@ jobs:
               
 
         - name: Run pytest 
-          working-directory: ./src/ingestion
           run: pytest
 
         - name: Lint
