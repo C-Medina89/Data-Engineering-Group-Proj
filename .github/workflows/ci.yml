@@ -29,7 +29,9 @@ jobs:
               
 
         - name: Run pytest 
-          run: pytest -v
+          run:  |
+              export PYTHONPATH=.
+              pytest -v
 
         - name: Lint
           run: flake8 src/ingestion
