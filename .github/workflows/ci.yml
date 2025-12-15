@@ -28,7 +28,8 @@ jobs:
               pip install -r requirements.txt
               
 
-        - name: Run test
+        - name: Run pytest 
+          working-directory: ./src/ingestion
           run: pytest test
 
         - name: Lint
