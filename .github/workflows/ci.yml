@@ -29,7 +29,7 @@ jobs:
               
 
         - name: Run tests
-          run: pytest tests --cov=src
+          run: pytest tests
 
         - name: Lint
           run: flake8 src/ingestion
