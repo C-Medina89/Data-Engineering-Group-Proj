@@ -21,10 +21,10 @@ jobs:
           filters: |
             ingestion:
               - 'src/ingestion/**'
-              - 'tests/ingestion/**'
+              - 'test/ingestion_tests/**'
             transformation:
               - 'src/transformation/**'
-              - 'tests/transformation/**'
+              - 'test/transform_test/**'
 
   test-ingestion:
     needs: detect-changes
@@ -44,7 +44,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Pytest (ingestion)
-        run: pytest -q tests/ingestion
+        run: pytest -q test/ingestion_tests
 
   test-transformation:
     needs: detect-changes
@@ -64,7 +64,7 @@ jobs:
           pip install -r requirements.txt
 
       - name: Pytest (transformation)
-        run: pytest -q tests/transformation
+        run: pytest -q tests/transform_test
 
   lint-and-security:
     runs-on: ubuntu-latest
