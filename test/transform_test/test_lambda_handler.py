@@ -1,8 +1,8 @@
 import os
 import json
 import pytest
-from transformation.lambda_handler import lambda_handler
-from transformation.transform_service import TransformService
+from lambda_handler import lambda_handler
+from transform_service import TransformService
 
 
 def test_lambda_handler_calls_run(monkeypatch):
