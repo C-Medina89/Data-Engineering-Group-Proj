@@ -1,66 +1,99 @@
 name: CI Pipeline
 
-
 on:
-    push:
-        branches:
-            - main
-    pull_request:
-        branches:
-            - main
-
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 jobs:
-    run-tests:
-       runs-on: ubuntu-latest
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      ingestion: ${{ steps.filter.outputs.ingestion }}
+      transformation: ${{ steps.filter.outputs.transformation }}
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            ingestion:
+              - 'src/ingestion/**'
+              - 'tests/ingestion/**'
+            transformation:
+              - 'src/transformation/**'
+              - 'tests/transformation/**'
 
-       steps:
-        - name: Checkout repository
-          uses: actions/checkout@v4
+  test-ingestion:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.ingestion == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
-        - name: Set up Python
-          uses: actions/setup-python@v5
-          with:
-            python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
+      - name: Pytest (ingestion)
+        run: pytest -q tests/ingestion
 
-        - name: Install dependencies
-          run: |
-              python -m pip install --upgrade pip
-              pip install -r requirements.txt
+  test-transformation:
+    needs: detect-changes
+    if: ${{ needs.detect-changes.outputs.transformation == 'true' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
-        - name: Run pytest
-          run:  |
-              export PYTHONPATH=.
-              pytest -v
-        
-        - name: Install Black
-          run: pip install black
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-        - name: Run Black (check only)
-          run: |
-              black src/ingestion/ --check
-              black --check .
+      - name: Pytest (transformation)
+        run: pytest -q tests/transformation
 
+  lint-and-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
 
-        - name: Install linting and security tools
-          run: |
-              pip install flake8 bandit pip-audit
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
 
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
 
-        - name: Lint with flake8
-          run: flake8 src/ --max-line-length=120
+      - name: Install formatting/lint/security tools
+        run: pip install black flake8 bandit pip-audit
 
-        - name: Security - bandit
-          run: |
-            # Run but don't fail the pipeline
-            bandit -r src || echo "Bandit completed (issues found but not blocking)"
+      - name: Run Black (check only)
+        run: |
+          black src/ingestion/ --check
+          black --check .
 
+      - name: Lint with flake8
+        run: flake8 src/ --max-line-length=120
 
-        - name: Security - pip-audit
-          run: |
-            # Run but don't fail the pipeline  
-            pip-audit || echo "pip-audit completed (vulnerabilities found but not blocking)"
+      - name: Security - bandit (non-blocking)
+        run: bandit -r src || echo "Bandit completed (issues found but not blocking)"
+
+      - name: Security - pip-audit (non-blocking)
+        run: pip-audit || echo "pip-audit completed (vulnerabilities found but not blocking)"
