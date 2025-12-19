@@ -6,7 +6,7 @@ from io import BytesIO
 import json
 import pandas as pd
 import pytest
-from transformation.s3_client import S3TransformationClient
+from s3_client import S3TransformationClient
 
 
 def test_read_raw_json_list_format(mocker):
