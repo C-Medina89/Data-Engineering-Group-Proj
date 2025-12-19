@@ -1,10 +1,7 @@
 import json
 import boto3
-import os
 import pandas as pd
 from uuid import uuid4
-# import pyarrow.parquet as pq
-import io
 from io import BytesIO
 from datetime import datetime, timezone
 import logging

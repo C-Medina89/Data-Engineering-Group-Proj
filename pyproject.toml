@@ -1,8 +1,8 @@
 [tool.black]
-line-length = 120
+line-length = 140
 target-version = ["py312"]
 
 [tool.flake8]
-max-line-length = 120
+max-line-length = 140
 extend-ignore = ["E203", "W503"]
 exclude = [".venv", "__pycache__", "build", "dist"]
