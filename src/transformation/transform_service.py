@@ -22,8 +22,6 @@ TRANSFORM_MAP = {
     "payment": "make_fact_payment",
 }
 
-
-
 class TransformService:
     """
     Transform service tightly coupled to S3TransformationClient
@@ -38,12 +36,14 @@ class TransformService:
             logger.info(f"Fetching ingest table: {table_name}")
             self._cache[table_name] = self.ingest_s3.read_table(table_name)
         return self._cache[table_name]
+    
     # Dimensions
     def make_dim_currency(self) -> pd.DataFrame:
         logger.info("Creating dim_currency")
         currency = self._get_ingest_table("currency")
         currency = currency.drop_duplicates(subset=["currency_id"], keep="last")
         return currency[["currency_id", "currency_code"]]
+    
     def make_dim_staff(self) -> pd.DataFrame:
         logger.info("Creating dim_staff")
         staff = self._get_ingest_table("staff").drop_duplicates(subset=["staff_id"], keep="last")
@@ -66,6 +66,7 @@ class TransformService:
             self._get_ingest_table("address")
             .drop_duplicates(subset=["address_id"], keep="last")
             .rename(columns={"address_id": "legal_address_id"})
+            .set_index("legal_address_id") # added this line to get rid of Nan values
         )
         dim = counterparty.join(address, on="legal_address_id", rsuffix="_addr")
         return dim.rename(
@@ -91,14 +92,20 @@ class TransformService:
                 "counterparty_legal_phone_number",
             ]
         ]
+    
+
     def make_dim_design(self) -> pd.DataFrame:
         logger.info("Creating dim_design")
         design = self._get_ingest_table("design").drop_duplicates(subset=["design_id"], keep="last")
         return design[["design_id", "design_name", "file_location", "file_name"]]
+    
+
     def make_dim_payment_type(self) -> pd.DataFrame:
         logger.info("Creating dim_payment_type")
         payment_type = self._get_ingest_table("payment_type").drop_duplicates(subset=["payment_type_id"], keep="last")
         return payment_type[["payment_type_id", "payment_type_name"]]
+    
+
     def make_dim_date(self) -> pd.DataFrame:
         logger.info("Creating dim_date")
         payments = self._get_ingest_table("payment")
@@ -131,6 +138,8 @@ class TransformService:
         dates["quarter"] = dt.dt.quarter
         dates.insert(0, "date_id", range(1, len(dates) + 1))
         return dates
+    
+
     def make_dim_transaction(self) -> pd.DataFrame:
         logger.info("Creating dim_transaction")
         txn = self._get_ingest_table("transaction").drop_duplicates(subset=["transaction_id"], keep="last")
@@ -142,6 +151,8 @@ class TransformService:
                 "purchase_order_id",
             ]
         ]
+    
+
     def make_dim_location(self) -> pd.DataFrame:
         logger.info("Creating dim_location")
         address = self._get_ingest_table("address").drop_duplicates(subset=["address_id"], keep="last")
@@ -158,6 +169,8 @@ class TransformService:
             ]
         ]
         return dim_location
+    
+
         # Fact Tables
     def make_fact_sales_order(self) -> pd.DataFrame:
         table_name = "fact_sales_order"
@@ -200,6 +213,8 @@ class TransformService:
             f"Transformation successful: {table_name} rows={len(fact)}"
         )
         return fact
+    
+
     def make_fact_payment(self) -> pd.DataFrame:
         logger.info("Creating fact_payment")
         payment = self._get_ingest_table("payment")
@@ -216,6 +231,8 @@ class TransformService:
                 "paid",
             ]
         ]
+    
+
     def make_fact_purchase_order(self) -> pd.DataFrame:
         logger.info("Creating fact_purchase_order")
         po = self._get_ingest_table("purchase_order")
@@ -252,9 +269,11 @@ class TransformService:
                 "agreed_delivery_location_id",
             ]
         ]
-        # Add surrogate key like in the schema
+    
         fact.insert(0, "purchase_record_id", range(1, len(fact) + 1))
         return fact
+    
+
     # Orchestration
     def run(self):
         logger.info("Starting transformation run")
