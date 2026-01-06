@@ -76,3 +76,41 @@ variable "ingestion_schedule" {
   type        = string
   default     = "rate(15 minutes)"
 }
+
+# warehouse variables
+variable "dw_db_username" {
+  description = "Data warehouse database username"
+  type        = string
+  default     = "warehouse_admin"
+}
+variable "dw_db_password" {
+  description = "Data warehouse database password"
+  type        = string
+  sensitive   = true
+}
+variable "rds_instance_class" {
+  description = "RDS instance type"
+  type        = string
+  default     = "db.t3.micro"
+}
+variable "rds_allocated_storage" {
+  description = "RDS storage in GB"
+  type        = number
+  default     = 20
+}
+variable "rds_backup_retention" {
+  description = "RDS backup retention in days"
+  type        = number
+  default     = 7
+}
+variable "rds_engine_version" {
+  description = "PostgreSQL engine version"
+  type        = string
+  default     = "14.17"
+}
+
+# variable "rds_multi_az" {
+#   description = "Enable Multi-AZ deployment"
+#   type        = bool
+#   default     = false  # true for production
+# }

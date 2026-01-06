@@ -64,17 +64,41 @@ resource "aws_iam_role_policy" "lambda_s3_permissions" {
 }
 
 
+# resource "aws_iam_role_policy" "lambda_secrets_access" {
+#   name = "${var.project_name}-lambda-secrets-access"
+#   role = aws_iam_role.lambda_exec.id
+#   policy = jsonencode({
+#     Version = "2012-10-17"
+#     Statement = [{
+      
+#       Effect = "Allow"
+#       Action = ["secretsmanager:GetSecretValue"]
+#       Resource = data.aws_secretsmanager_secret.totesys_creds.arn 
+#     }]
+#   })
+# }
+
+# IAM policy attachment for VPC execution
+resource "aws_iam_role_policy_attachment" "lambda_vpc_access" {
+  role       = aws_iam_role.lambda_exec.name
+  policy_arn = "arn:aws:iam::aws:policy/service-role/AWSLambdaVPCAccessExecutionRole"
+}
+
+# Update the lambda_secrets_access policy to include DW secret
 resource "aws_iam_role_policy" "lambda_secrets_access" {
   name = "${var.project_name}-lambda-secrets-access"
   role = aws_iam_role.lambda_exec.id
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      
-      Effect = "Allow"
-      Action = ["secretsmanager:GetSecretValue"]
-      Resource = data.aws_secretsmanager_secret.totesys_creds.arn 
-    }]
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = ["secretsmanager:GetSecretValue"]
+        Resource = [
+          data.aws_secretsmanager_secret.totesys_creds.arn,
+          aws_secretsmanager_secret.dw_creds.arn  # ADD THIS LINE
+        ]
+      }
+    ]
   })
 }
-

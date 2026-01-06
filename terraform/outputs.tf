@@ -38,3 +38,40 @@ output "lambda_iam_role" {
   description = "IAM role for Lambda functions"
   value       = aws_iam_role.lambda_exec.arn
 }
+
+output "data_warehouse_endpoint" {
+  description = "RDS endpoint for data warehouse"
+  value       = aws_db_instance.data_warehouse.address
+  sensitive   = false
+}
+
+output "data_warehouse_port" {
+  description = "RDS port for data warehouse"
+  value       = aws_db_instance.data_warehouse.port
+}
+
+output "data_warehouse_db_name" {
+  description = "RDS database name"
+  value       = aws_db_instance.data_warehouse.db_name
+}
+
+output "load_lambda_name" {
+  description = "Name of the load Lambda function"
+  value       = aws_lambda_function.loading.function_name
+}
+
+output "dw_secret_arn" {
+  description = "ARN of the data warehouse secret"
+  value       = aws_secretsmanager_secret.dw_creds.arn
+  sensitive   = true
+}
+
+output "vpc_id" {
+  description = "VPC ID used for deployment"
+  value       = data.aws_vpc.default.id
+}
+
+output "lambda_security_group_id" {
+  description = "Security group ID for Lambda functions"
+  value       = aws_security_group.lambda_sg.id
+}

@@ -20,12 +20,18 @@ resource "aws_lambda_function" "ingestion" {
   filename         = data.archive_file.ingestion_lambda.output_path
   source_code_hash = data.archive_file.ingestion_lambda.output_base64sha256
   
+  
 
   layers = [aws_lambda_layer_version.dependencies.arn]
 
+
+  vpc_config {
+    subnet_ids         = slice(data.aws_subnets.default.ids, 0, 2)  # Use first 2 subnets
+    security_group_ids = [aws_security_group.lambda_sg.id]
+  }
   timeout     = var.lambda_timeout
   memory_size = var.lambda_memory_size
-
+  
   environment {
     variables = {
       LANDING_BUCKET_NAME    = aws_s3_bucket.landing_zone.bucket
